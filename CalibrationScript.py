@@ -195,7 +195,7 @@ def save_calibration_to_yaml(output_file, camera_matrix, dist_coeffs, reprojecti
         return False
 
 
-def calibrate_camera(image_path, image_resolution, chessboard_size, square_size, lens_type='normal'):
+def calibrate_camera(image_path, image_resolution, chessboard_size, square_size, lens_type='normal', image_prefix='left-'):
     """
     相机标定函数 - 支持普通和鱼眼镜头模式
 
@@ -221,22 +221,22 @@ def calibrate_camera(image_path, image_resolution, chessboard_size, square_size,
     imgpoints = []  # 2D点
 
     # 获取所有符合命名规则的图片
-    pattern = os.path.join(image_path, "left-*.png")
+    pattern = os.path.join(image_path, f"{image_prefix}-*.png")
     images = sorted(glob.glob(pattern))
 
     # 如果没有找到图片，尝试其他可能的命名格式
     if not images:
-        print(f"未找到符合 'left-*.png' 格式的图片，尝试其他可能的命名格式...")
+        print(f"未找到符合 '{image_prefix}-*.png' 格式的图片，尝试其他可能的命名格式...")
         # 尝试 left*.png (没有连字符)
-        pattern2 = os.path.join(image_path, "left*.png")
+        pattern2 = os.path.join(image_path, f"{image_prefix}*.png")
         images = sorted(glob.glob(pattern2))
 
         if not images:
             # 尝试 *.png (所有png文件)
             pattern3 = os.path.join(image_path, "*.png")
             all_pngs = sorted(glob.glob(pattern3))
-            # 筛选包含"left"的文件名
-            images = [img for img in all_pngs if "left" in os.path.basename(img).lower()]
+            # 筛选包含"{image_prefix}"的文件名
+            images = [img for img in all_pngs if f"{image_prefix}" in os.path.basename(img).lower()]
 
     if not images:
         print(f"\n错误: 在路径 '{image_path}' 中未找到符合命名规则的图片")
@@ -244,7 +244,7 @@ def calibrate_camera(image_path, image_resolution, chessboard_size, square_size,
         print("请检查:")
         print(f"1. 路径 '{image_path}' 是否正确")
         print("2. 图片是否确实存在于该路径")
-        print("3. 图片是否符合 'left-*.png' 命名格式")
+        print(f"3. 图片是否符合 '{image_prefix}-*.png' 命名格式")
         # 列出目录内容帮助诊断
         if os.path.exists(image_path):
             print(f"\n目录 '{image_path}' 中的内容:")
@@ -347,6 +347,8 @@ def main():
                                      formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('--image_path', type=str, default=r'D:\Schen\CalibrationScript\calibrationdata_2',
                         help='标定图片存储路径\n(默认: D:\\Schen\\CalibrationScript\\calibrationdata_0)')
+    parser.add_argument('--image_prefix', type=str, default=r'left-',
+                        help='标定图片名称的的统一前缀')
     parser.add_argument('--width', type=int, default=1280,
                         help='图片宽度(像素)\n(默认: 1280)')
     parser.add_argument('--height', type=int, default=720,
@@ -369,6 +371,7 @@ def main():
 
     # 获取参数
     image_path = args.image_path
+    image_prefix = args.image_prefix
     image_resolution = (args.width, args.height)
     chessboard_size = (args.pattern_cols, args.pattern_rows)
     square_size = args.square_size
@@ -380,6 +383,7 @@ def main():
     print("=" * 70)
     print("参数设置:")
     print(f"- 图片路径: {image_path}")
+    print(f"- 图片名称前缀: {image_prefix}")
     print(f"- 目标分辨率: {image_resolution[0]}x{image_resolution[1]} 像素")
     print(f"- 棋盘格内角点: {chessboard_size[0]}x{chessboard_size[1]}")
     print(f"- 方格实际尺寸: {square_size} mm")
@@ -417,7 +421,7 @@ def main():
     print(f"\n✓ 路径 '{image_path}' 存在，开始处理...")
 
     # 执行标定
-    result = calibrate_camera(image_path, image_resolution, chessboard_size, square_size, lens_type)
+    result = calibrate_camera(image_path, image_resolution, chessboard_size, square_size, lens_type, image_prefix)
 
     if result is None:
         print("\n" + "=" * 70)
